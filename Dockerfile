@@ -20,6 +20,14 @@ RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add 
     apt update && apt install -y kubectl
 
 # devops tool
+RUN echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" | tee /etc/apt/sources.list.d/ansible.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
+    apt update && apt install ansible -y
+
+# terraform
+RUN wget https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip && \
+    unzip terraform_0.12.28_linux_amd64.zip && rm terraform_0.12.28_linux_amd64.zip && \
+    mv terraform /usr/local/bin/
 
 CMD ["echo https://github.com/pepodev/super-utils-docker"]
 ENTRYPOINT [ "/bin/sh", "-c"]
