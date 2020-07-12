@@ -1,7 +1,7 @@
 FROM debian:stretch-slim
 
 # common tools
-RUN apt update && apt install curl wget gnupg2 inetutils-ping rsync apt-transport-https -y
+RUN apt update && apt install curl wget gnupg2 inetutils-ping rsync apt-transport-https unzip -y
 
 # database tools
 RUN apt install mysql-client -y && \
