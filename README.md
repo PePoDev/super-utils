@@ -19,9 +19,11 @@ docker run --rm -v ./service-account:./service-account pepodev/super-utils "gclo
 
 ## List of avaliables utility
 
-- ping, curl, wget, rync, scp, ssh
+- curl, wget, unzip, git
 - mysql-client (mysql, mysqldump)
 - gcloud, gsutil
 - kubectl
 - ansible
 - terraform
+- postgresql-client
+- mongodb
