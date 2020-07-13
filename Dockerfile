@@ -4,8 +4,9 @@ FROM alpine:3.7
 RUN apk upgrade && apk update && apk add curl git wget unzip
 
 # database tools
-RUN apk add  mysql-client
-RUN apk add  mongodb
+RUN apk add  mysql-client && \
+    apk add  mongodb && \
+    apk add postgresql-client
 
 # install gcloud tools
 
