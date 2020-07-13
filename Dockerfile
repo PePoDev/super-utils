@@ -1,18 +1,17 @@
 FROM alpine:3.7
 
 # common tools
-RUN apk add && apk install update curl git wget unzip
+RUN apk upgrade && apk update && apk add curl git wget unzip
 
 # database tools
-RUN apk add --no-cache mysql-client
-RUN apk add --no-cache mongodb
+RUN apk add  mysql-client
+RUN apk add  mongodb
 
 # install gcloud tools
 
 # kubernetes
-ADD https://storage.googleapis.com/kubernetes-release/release/v1.6.4/bin/linux/amd64/kubectl /usr/local/bin/kubectl
-RUN apk add --no-cache curl ca-certificates && \
-    chmod +x /usr/local/bin/kubectl 
+RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl && \
+    chmod +x /usr/bin/kubectl
 
 # devops tool
 
