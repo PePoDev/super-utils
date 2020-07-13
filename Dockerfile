@@ -9,7 +9,9 @@ RUN apk add  mysql-client && \
     apk add postgresql-client
 
 # install gcloud tools
-
+RUN wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip &&\
+    unzip google-cloud-sdk.zip &&\
+    rm google-cloud-sdk.zip
 # kubernetes
 RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.5/bin/linux/amd64/kubectl && \
     chmod +x /usr/bin/kubectl
