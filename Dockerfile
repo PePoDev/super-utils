@@ -1,23 +1,23 @@
 FROM alpine:3.7
 
 # common tools
-RUN apk update && apk upgrade && apk add curl git wget bash unzip iputils rsync openssh sshpass gnupg
+RUN apk update && apk upgrade && apk add curl git wget unzip iputils rsync openssh
 
-# database tools
-RUN apk add  mysql-client && \
-    apk add postgresql-client
+# database cli
+RUN apk add mysql-client postgresql-client mongodb-tools
 
-# install gcloud tools
+# gcloud-sdk
 RUN wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip && \
     unzip google-cloud-sdk.zip && rm google-cloud-sdk.zip && \
     mv google-cloud-sdk /usr/local/bin/
-    
+
 # kubernetes
 RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.5/bin/linux/amd64/kubectl && \
     chmod +x /usr/bin/kubectl
 
-# devops tool
+# ansible
 RUN apk add ansible
+
 # terraform
 RUN wget https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip && \
     unzip terraform_0.12.28_linux_amd64.zip && rm terraform_0.12.28_linux_amd64.zip && \
