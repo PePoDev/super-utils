@@ -23,4 +23,5 @@ RUN wget https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linu
     unzip terraform_0.12.28_linux_amd64.zip && rm terraform_0.12.28_linux_amd64.zip && \
     mv terraform /usr/local/bin/
 
-CMD ["/bin/sh", "-c", "echo see the document on https://github.com/pepodev/super-utils-docker"]
+CMD ["echo see the document on https://github.com/pepodev/super-utils-docker"]
+ENTRYPOINT [ "/bin/sh", "-c" ]
