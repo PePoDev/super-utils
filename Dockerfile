@@ -1,7 +1,7 @@
 FROM alpine:3.7
 
 # common tools
-RUN apk update && apk upgrade && apk add curl git wget bash unzip iputils rsync openssh sshpass gnupg tar
+RUN apk update && apk upgrade && apk add curl git wget bash unzip iputils rsync openssh sshpass gnupg
 
 # database tools
 RUN apk add  mysql-client && \
@@ -17,8 +17,9 @@ RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-releas
     chmod +x /usr/bin/kubectl
 
 #helm
-RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 &&\
-    chmod 700 /usr/local/bin/
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && \
+    chmod 700 get_helm.sh && \
+    ./get_helm.sh
 # devops tool
 RUN apk add ansible
 # terraform
