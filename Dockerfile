@@ -1,6 +1,7 @@
 FROM alpine
 
-RUN apk update && apk upgrade && apk add curl git wget unzip iputils rsync openssh sshpass gnupg tar \
+RUN apk update && apk upgrade && apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    curl git wget unzip iputils rsync openssh sshpass gnupg tar \
     mysql-client postgresql-client mongodb-tools ansible terraform helm kubectl
 
 RUN wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip && \
