@@ -1,23 +1,23 @@
-# Super Utils Docker Image
+# Super Utils
 
-Super utils docker images is the containerize with many utility for multiple purpose
+Super utils is the utility containerized for multiple purpose
 
 ## Getting Started
 
 Get this image in local machine
 
 ```bash
-docker pull pepodev/super-utils
+docker pull quay.io/pepodev/super-utils
 
 # mysqldump
-docker run --rm pepodev/super-utils "mysqldump --help"
+docker run --rm quay.io/pepodev/super-utils "mysqldump --help"
 
 # gsutil // copy local file to google cloud storage
 # working directory is /opt/ mount folder in this path to easy use as volume
-docker run --rm -v ./service-account:./service-account pepodev/super-utils "gcloud activate ./service-account/gcp && gsutils -m copy -r ./dir/ gs://some-bucket"
+docker run --rm -v ./service-account:./service-account quay.io/pepodev/super-utils "gcloud activate ./service-account/gcp && gsutils -m copy -r ./dir/ gs://some-bucket"
 ```
 
-## List of avaliables utility
+## List of utility
 
 - curl, wget, unzip, git, ping, rsync, ssh, scp
 - mysql-client (mysql, mysqldump)
