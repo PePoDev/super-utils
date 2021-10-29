@@ -32,3 +32,4 @@ docker run --rm -v ./service-account:./service-account quay.io/pepodev/super-uti
 - helm
 - ansible
 - terraform
+- python, pip
