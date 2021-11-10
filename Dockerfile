@@ -1,7 +1,7 @@
 FROM alpine:3
 
 RUN apk --update add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-    curl git wget unzip iputils rsync openssh sshpass gnupg tar python3 py3-pip \
+    curl git wget unzip iputils rsync openssh sshpass gnupg tar python3 py3-pip gzip \
     mysql-client postgresql-client mongodb-tools redis ansible terraform helm kubectl && \
     pip3 install --upgrade pip
 

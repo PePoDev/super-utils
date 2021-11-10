@@ -19,7 +19,7 @@ docker run --rm -v ./service-account:./service-account quay.io/pepodev/super-uti
 
 ## List of utility
 
-- curl, wget, unzip, git, ping, rsync, ssh, scp, tar
+- curl, wget, unzip, git, ping, rsync, ssh, scp, tar, gzip
 - mysql-client
 - mysqldump
 - postgresql-client
