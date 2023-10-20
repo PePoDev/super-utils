@@ -1,7 +1,7 @@
 FROM alpine:3
 
 RUN apk --update add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-    curl git wget unzip iputils rsync openssh sshpass gnupg tar python3 py3-pip gzip jq \
+    curl git wget unzip iputils rsync openssh sshpass gnupg tar python3 py3-pip gzip jq cmake \
     mysql-client postgresql-client mongodb-tools redis ansible terraform helm kubectl && \
     pip3 install --upgrade pip
 
@@ -10,7 +10,7 @@ RUN wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip && \
     unzip google-cloud-sdk.zip && rm google-cloud-sdk.zip && \
     mv google-cloud-sdk /usr/local/bin/
 
-# AWS S
+# AWS SDK and Lambda Runtime API
 RUN pip3 install --no-cache-dir awscli && rm -rf /var/cache/apk/*
 
 # MSSQL Tools
