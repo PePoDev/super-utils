@@ -94,6 +94,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     echo "MSSQL Tools not available for $TARGETARCH architecture"; \
     fi
 
+# Expose application port
 EXPOSE 8080
 
 # Run the application
