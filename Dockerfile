@@ -1,49 +1,113 @@
-# Start from the official Golang image
-FROM golang:alpine AS builder
+# Build stage
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
 COPY . .
-RUN go mod tidy && go build main.go
 
+# Build the application with optimizations for target platform
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -o super-utils main.go
+
+# Final stage
 FROM alpine:latest
+
+LABEL maintainer="PePoDev"
+LABEL description="Super Utils - A comprehensive DevOps utilities container"
+
 WORKDIR /app
+
+# Copy the binary from builder
 COPY --from=builder /app/super-utils .
-RUN apk --update add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-    curl git wget unzip iputils rsync openssh sshpass gnupg tar python3 py3-pip gzip jq cmake \
-    mysql-client postgresql-client mongodb-tools redis ansible terraform helm kubectl && \
-    pip3 install --upgrade pip
 
-# Google Cloud SDK
-RUN wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.zip && \
-    unzip google-cloud-sdk.zip && rm google-cloud-sdk.zip && \
-    mv google-cloud-sdk /usr/local/bin/
+# Install base packages and tools in a single layer
+RUN apk --no-cache add --update \
+    # Base utilities
+    bash curl wget git unzip tar gzip jq vim \
+    # Network tools
+    bind-tools iproute2 net-tools iputils openssh-client \
+    netcat-openbsd tcpdump nmap mtr iperf3 socat \
+    # Database clients
+    mysql-client postgresql-client mongodb-tools redis \
+    # DevOps tools
+    ansible helm kubectl \
+    # Python and pip
+    python3 py3-pip \
+    # Additional utilities
+    rsync sshpass gnupg apache2-utils coreutils \
+    # Advanced network tools
+    mii-tool tcptraceroute traceroute tshark \
+    lftp cpio \
+    bird bridge-utils busybox-extras conntrack-tools \
+    drill file fping httpie iftop ipset iptables iptraf-ng \
+    ipvsadm libc6-compat net-snmp-tools nftables ngrep \
+    openssl scapy strace util-linux websocat && \
+    # Clean up
+    rm -rf /var/cache/apk/* /tmp/*
 
-# AWS SDK and Lambda Runtime API
-RUN pip3 install --no-cache-dir awscli && rm -rf /var/cache/apk/*
+# Install Terraform
+ARG TERRAFORM_VERSION=0.12.21
+RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+RUN unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+RUN mv terraform /usr/bin/terraform
 
-# MSSQL Tools
+# Upgrade pip to the latest version
+RUN pip3 install --no-cache-dir --upgrade pip
+
+# Install AWS CLI
+RUN pip3 install --no-cache-dir awscli && \
+    rm -rf /root/.cache/pip
+
+# Install Google Cloud SDK
+RUN wget -q https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz && \
+    tar -xzf google-cloud-sdk.tar.gz && \
+    rm google-cloud-sdk.tar.gz && \
+    mv google-cloud-sdk /usr/local/ && \
+    /usr/local/google-cloud-sdk/install.sh --quiet --usage-reporting=false --path-update=true && \
+    ln -s /usr/local/google-cloud-sdk/bin/* /usr/local/bin/ && \
+    rm -rf /root/.cache
+
+# Install MSSQL Tools (only for amd64 architecture as ARM64 is not officially supported)
 ARG MSSQL_VERSION=17.5.2.1-1
+ARG TARGETARCH
 ENV MSSQL_VERSION=${MSSQL_VERSION}
-RUN curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_${MSSQL_VERSION}_amd64.apk && \
-    curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_${MSSQL_VERSION}_amd64.apk && \
-    curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_${MSSQL_VERSION}_amd64.sig && \
-    curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_${MSSQL_VERSION}_amd64.sig && \
-    curl https://packages.microsoft.com/keys/microsoft.asc  | gpg --import - && \
+ENV PATH=$PATH:/opt/mssql-tools/bin
+
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --import - && \
+    curl -sSL -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_${MSSQL_VERSION}_amd64.apk && \
+    curl -sSL -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_${MSSQL_VERSION}_amd64.apk && \
+    curl -sSL -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_${MSSQL_VERSION}_amd64.sig && \
+    curl -sSL -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_${MSSQL_VERSION}_amd64.sig && \
     gpg --verify msodbcsql17_${MSSQL_VERSION}_amd64.sig msodbcsql17_${MSSQL_VERSION}_amd64.apk && \
     gpg --verify mssql-tools_${MSSQL_VERSION}_amd64.sig mssql-tools_${MSSQL_VERSION}_amd64.apk && \
     echo y | apk add --allow-untrusted msodbcsql17_${MSSQL_VERSION}_amd64.apk mssql-tools_${MSSQL_VERSION}_amd64.apk && \
-    rm -f msodbcsql*.sig msodbcsql*.apk mssql-tools*.sig mssql-tools*.apk
-ENV PATH=$PATH:/opt/mssql-tools/bin
+    rm -f msodbcsql*.sig msodbcsql*.apk mssql-tools*.sig mssql-tools*.apk; \
+    else \
+    echo "MSSQL Tools not available for $TARGETARCH architecture"; \
+    fi
 
-RUN apk add --no-cache \
-	arping busybox mii-tool tcpdump tcptraceroute traceroute tshark \
-	awk cut diff find grep sed vim coreutils \
-	curl wget \
-	bind-tools iproute2 net-tools mtr iputils iperf3 ethtool nmap \
-	lftp rsync openssh-client socat netcat-openbsd apache2-utils \
-	mysql-client postgresql-client git gzip cpio tar \
-	bash bird bridge-utils busybox-extras calicoctl conntrack-tools ctop dhcping drill file fping httpie iftop iperf ipset iptables iptraf-ng ipvsadm jq libc6-compat liboping net-snmp-tools netgen nftables ngrep nmap-nping openssl py-crypto py2-virtualenv python2 scapy strace termshark util-linux websocat
+# Create non-root user for security
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser && \
+    chown -R appuser:appuser /app
 
-    EXPOSE 8080
+# Switch to non-root user
+USER appuser
 
-CMD ["echo see the document on https://github.com/PePoDev/super-utils"]
-ENTRYPOINT [ "/bin/sh", "-c" ]
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+
+# Run the application
+ENTRYPOINT ["/app/super-utils"]
+CMD []
