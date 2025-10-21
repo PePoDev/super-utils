@@ -42,7 +42,7 @@ RUN apk --no-cache add --update \
     # Database clients
     mysql-client postgresql-client mongodb-tools redis \
     # DevOps tools
-    ansible helm kubectl \
+    ansible helm kubectl aws-cli \
     # Additional utilities
     rsync sshpass gnupg apache2-utils coreutils \
     # Advanced network tools
@@ -61,15 +61,11 @@ RUN apk --no-cache add --update \
     rm -rf /var/cache/apk/* /tmp/*
 
 # Install Terraform
-ARG TERRAFORM_VERSION=0.12.21
+ARG TERRAFORM_VERSION=1.14.0
 RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
     rm terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
     mv terraform /usr/bin/terraform
-
-# Install AWS CLI
-RUN pip3 install --no-cache-dir awscli && \
-    rm -rf /root/.cache/pip
 
 # Install Google Cloud SDK
 RUN wget -q https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz && \
@@ -99,20 +95,8 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     echo "MSSQL Tools not available for $TARGETARCH architecture"; \
     fi
 
-# Create non-root user for security
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser && \
-    chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
-
 # Run the application
-ENTRYPOINT ["/app/super-utils"]
-CMD []
+ENTRYPOINT [ "/bin/sh", "-c" ]
+CMD ["/app/super-utils"]
