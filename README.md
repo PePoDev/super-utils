@@ -16,7 +16,25 @@ super-utils is a portable, web-based debugging and network toolkit built with Go
 
 super-utils includes a comprehensive set of CLI/network utilities (all available in the Docker image and UI):
 
-arping, apache2-utils, bash, bind-tools, bird, bridge-utils, busybox, busybox-extras, calicoctl, conntrack-tools, ctop, curl, dhcping, drill, ethtool, file, fping, httpie, iftop, iperf, iperf3, iproute2, ipset, iptables, iptraf-ng, iputils, ipvsadm, jq, libc6-compat, liboping, mii-tool, mtr, net-snmp-tools, netcat-openbsd, netgen, nftables, ngrep, nmap, nmap-nping, openssl, py-crypto, py2-virtualenv, python2, scapy, socat, strace, tcpdump, tcptraceroute, termshark, tshark, util-linux, vim, websocat, awk, cut, diff, find, grep, sed, vi, wc, gzip, cpio, tar, wget, dig, nslookup, telnet, ssh, lftp, rsync, scp, ab, mysql-client, postgresql-client, git
+### Network & Diagnostic Tools
+
+apache2-utils, arping, bash, bind-tools, bird, bridge-utils, busybox, busybox-extras, calicoctl, conntrack-tools, ctop, curl, dhcping, drill, ethtool, file, fping, httpie, iftop, iperf, iperf3, iproute2, ipset, iptables, iptraf-ng, iputils, ipvsadm, liboping, mii-tool, mtr, net-snmp-tools, netcat-openbsd, netgen, nftables, ngrep, nmap, nmap-nping, scapy, socat, strace, tcpdump, tcptraceroute, termshark, tshark, websocat
+
+### File & Text Processing
+
+awk, cut, diff, find, grep, sed, vi, vim, wc, gzip, cpio, tar, jq
+
+### System & Development
+
+bash, git, libc6-compat, openssl, py-crypto, py2-virtualenv, python2, python3, util-linux
+
+### Web & Transfer Tools
+
+curl, wget, dig, nslookup, telnet, ssh, lftp, rsync, scp, ab (ApacheBench)
+
+### Database Clients
+
+mysql-client, postgresql-client, mongodb-tools, redis
 
 ## Quick Start
 

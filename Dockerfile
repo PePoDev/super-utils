@@ -34,12 +34,12 @@ RUN apk --no-cache add --update \
     # Network tools
     bind-tools iproute2 net-tools iputils openssh-client \
     netcat-openbsd tcpdump nmap mtr iperf3 socat \
+    # Python and pip
+    python3 py3-pip \
     # Database clients
     mysql-client postgresql-client mongodb-tools redis \
     # DevOps tools
     ansible helm kubectl \
-    # Python and pip
-    python3 py3-pip \
     # Additional utilities
     rsync sshpass gnupg apache2-utils coreutils \
     # Advanced network tools
@@ -48,7 +48,13 @@ RUN apk --no-cache add --update \
     bird bridge-utils busybox-extras conntrack-tools \
     drill file fping httpie iftop ipset iptables iptraf-ng \
     ipvsadm libc6-compat net-snmp-tools nftables ngrep \
-    openssl scapy strace util-linux websocat && \
+    openssl scapy strace util-linux websocat \
+    # Additional requested tools
+    ctop dhcping ethtool iperf liboping nmap-nping \
+    py-crypto py2-virtualenv python2 termshark netgen && \
+    # Install calicoctl separately (binary download)
+    wget -O /usr/local/bin/calicoctl https://github.com/projectcalico/calico/releases/latest/download/calicoctl-linux-amd64 && \
+    chmod +x /usr/local/bin/calicoctl && \
     # Clean up
     rm -rf /var/cache/apk/* /tmp/*
 
@@ -57,9 +63,6 @@ ARG TERRAFORM_VERSION=0.12.21
 RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 RUN unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 RUN mv terraform /usr/bin/terraform
-
-# Upgrade pip to the latest version
-RUN pip3 install --no-cache-dir --upgrade pip
 
 # Install AWS CLI
 RUN pip3 install --no-cache-dir awscli && \
