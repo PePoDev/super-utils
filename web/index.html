@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>super-utils Debugger</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        .output { background: #222; color: #eee; padding: 1em; border-radius: 5px; margin-top: 1em; white-space: pre-wrap; }
+        .section { margin-bottom: 2em; }
+        label { display: block; margin-bottom: 0.5em; }
+        input, textarea, select { width: 100%; margin-bottom: 1em; }
+        button { padding: 0.5em 1em; }
+    </style>
+</head>
+<body>
+    <h1>super-utils Debugger</h1>
+    <div class="section">
+        <h2>Tool Launcher</h2>
+        <form id="tool-form" hx-post="/api/shell" hx-target="#tool-output" hx-swap="innerHTML">
+            <label for="tool">Select Tool:</label>
+            <select id="tool" name="tool" onchange="updateCommandExample()">
+                <optgroup label="Network Tools">
+                    <option value="arping">arping</option>
+                    <option value="apache2-utils">apache2-utils</option>
+                    <option value="bash">bash</option>
+                    <option value="bind-tools">bind-tools</option>
+                    <option value="bird">bird</option>
+                    <option value="bridge-utils">bridge-utils</option>
+                    <option value="busybox">busybox</option>
+                    <option value="busybox-extras">busybox-extras</option>
+                    <option value="calicoctl">calicoctl</option>
+                    <option value="conntrack-tools">conntrack-tools</option>
+                    <option value="ctop">ctop</option>
+                    <option value="curl">curl</option>
+                    <option value="dhcping">dhcping</option>
+                    <option value="drill">drill</option>
+                    <option value="ethtool">ethtool</option>
+                    <option value="file">file</option>
+                    <option value="fping">fping</option>
+                    <option value="httpie">httpie</option>
+                    <option value="iftop">iftop</option>
+                    <option value="iperf">iperf</option>
+                    <option value="iperf3">iperf3</option>
+                    <option value="iproute2">iproute2</option>
+                    <option value="ipset">ipset</option>
+                    <option value="iptables">iptables</option>
+                    <option value="iptraf-ng">iptraf-ng</option>
+                    <option value="iputils">iputils</option>
+                    <option value="ipvsadm">ipvsadm</option>
+                    <option value="jq">jq</option>
+                    <option value="libc6-compat">libc6-compat</option>
+                    <option value="liboping">liboping</option>
+                    <option value="mii-tool">mii-tool</option>
+                    <option value="mtr">mtr</option>
+                    <option value="net-snmp-tools">net-snmp-tools</option>
+                    <option value="netcat-openbsd">netcat-openbsd</option>
+                    <option value="netgen">netgen</option>
+                    <option value="nftables">nftables</option>
+                    <option value="ngrep">ngrep</option>
+                    <option value="nmap">nmap</option>
+                    <option value="nmap-nping">nmap-nping</option>
+                    <option value="openssl">openssl</option>
+                    <option value="py-crypto">py-crypto</option>
+                    <option value="py2-virtualenv">py2-virtualenv</option>
+                    <option value="python2">python2</option>
+                    <option value="scapy">scapy</option>
+                    <option value="socat">socat</option>
+                    <option value="strace">strace</option>
+                    <option value="tcpdump">tcpdump</option>
+                    <option value="tcptraceroute">tcptraceroute</option>
+                    <option value="termshark">termshark</option>
+                    <option value="tshark">tshark</option>
+                    <option value="util-linux">util-linux</option>
+                    <option value="vim">vim</option>
+                    <option value="websocat">websocat</option>
+                </optgroup>
+                <optgroup label="File & Text Tools">
+                    <option value="awk">awk</option>
+                    <option value="cut">cut</option>
+                    <option value="diff">diff</option>
+                    <option value="find">find</option>
+                    <option value="grep">grep</option>
+                    <option value="sed">sed</option>
+                    <option value="vi">vi</option>
+                    <option value="wc">wc</option>
+                    <option value="gzip">gzip</option>
+                    <option value="cpio">cpio</option>
+                    <option value="tar">tar</option>
+                </optgroup>
+                <optgroup label="Web & DB Tools">
+                    <option value="curl">curl</option>
+                    <option value="wget">wget</option>
+                    <option value="dig">dig</option>
+                    <option value="nslookup">nslookup</option>
+                    <option value="telnet">telnet</option>
+                    <option value="nmap">nmap</option>
+                    <option value="ssh">ssh</option>
+                    <option value="lftp">lftp</option>
+                    <option value="rsync">rsync</option>
+                    <option value="scp">scp</option>
+                    <option value="nc">netcat (nc)</option>
+                    <option value="socat">socat</option>
+                    <option value="ab">ApacheBench (ab)</option>
+                    <option value="mysql">mysql</option>
+                    <option value="psql">psql</option>
+                    <option value="git">git</option>
+                </optgroup>
+            </select>
+            <label for="args">Arguments:</label>
+            <input type="text" id="args" name="args" placeholder="e.g. -c 4 google.com">
+            <div style="font-size:0.9em; color:#888; margin-bottom:1em;" id="example"></div>
+            <button type="submit">Run Tool</button>
+        </form>
+        <div id="tool-output" class="output"></div>
+    </div>
+    <script>
+        function updateCommandExample() {
+            var tool = document.getElementById('tool').value;
+            var example = '';
+            switch(tool) {
+                case 'ping': example = 'ping -c 4 google.com'; break;
+                case 'curl': example = 'curl https://api.github.com'; break;
+                case 'traceroute': example = 'traceroute google.com'; break;
+                case 'tcpdump': example = 'tcpdump -i eth0'; break;
+                case 'awk': example = "awk '{print $1}' file.txt"; break;
+                case 'grep': example = 'grep pattern file.txt'; break;
+                case 'nmap': example = 'nmap 8.8.8.8'; break;
+                case 'ssh': example = 'ssh user@host'; break;
+                case 'mysql': example = 'mysql -h host -u user -p'; break;
+                case 'psql': example = 'psql -h host -U user'; break;
+                case 'ab': example = 'ab -n 100 -c 10 http://host/'; break;
+                case 'apache2-utils': example = 'ab -n 100 -c 10 http://host/'; break;
+                case 'bash': example = 'bash -c "echo Hello World"'; break;
+                case 'bind-tools': example = 'dig google.com'; break;
+                case 'bird': example = 'bird -c /etc/bird.conf'; break;
+                case 'bridge-utils': example = 'brctl show'; break;
+                case 'busybox-extras': example = 'busybox-extras --list'; break;
+                case 'calicoctl': example = 'calicoctl node status'; break;
+                case 'conntrack-tools': example = 'conntrack -L'; break;
+                case 'ctop': example = 'ctop'; break;
+                case 'dhcping': example = 'dhcping -s 192.168.1.1'; break;
+                case 'drill': example = 'drill google.com'; break;
+                case 'ethtool': example = 'ethtool eth0'; break;
+                case 'file': example = 'file /bin/bash'; break;
+                case 'fping': example = 'fping 8.8.8.8'; break;
+                case 'httpie': example = 'http GET https://api.github.com'; break;
+                case 'iftop': example = 'iftop -i eth0'; break;
+                case 'iperf': example = 'iperf -c server'; break;
+                case 'iperf3': example = 'iperf3 -c server'; break;
+                case 'iproute2': example = 'ip addr'; break;
+                case 'ipset': example = 'ipset list'; break;
+                case 'iptables': example = 'iptables -L'; break;
+                case 'iptraf-ng': example = 'iptraf-ng'; break;
+                case 'iputils': example = 'ping 8.8.8.8'; break;
+                case 'ipvsadm': example = 'ipvsadm -L -n'; break;
+                case 'jq': example = 'jq . file.json'; break;
+                case 'libc6-compat': example = 'ldd --version'; break;
+                case 'liboping': example = 'oping 8.8.8.8'; break;
+                case 'mii-tool': example = 'mii-tool eth0'; break;
+                case 'mtr': example = 'mtr google.com'; break;
+                case 'net-snmp-tools': example = 'snmpget --version'; break;
+                case 'netcat-openbsd': example = 'nc -zv host 80'; break;
+                case 'netgen': example = 'netgen -batch'; break;
+                case 'nftables': example = 'nft list ruleset'; break;
+                case 'ngrep': example = 'ngrep -d eth0 port 80'; break;
+                case 'nmap-nping': example = 'nping --tcp google.com'; break;
+                case 'openssl': example = 'openssl version'; break;
+                case 'py-crypto': example = 'python2 -c "import Crypto"'; break;
+                case 'py2-virtualenv': example = 'virtualenv venv'; break;
+                case 'python2': example = 'python2 --version'; break;
+                case 'scapy': example = 'scapy'; break;
+                case 'socat': example = 'socat TCP4-LISTEN:1234,reuseaddr,fork EXEC:/bin/cat'; break;
+                case 'strace': example = 'strace ls'; break;
+                case 'termshark': example = 'termshark -i eth0'; break;
+                case 'tshark': example = 'tshark -i eth0'; break;
+                case 'util-linux': example = 'lsblk'; break;
+                case 'vim': example = 'vim file.txt'; break;
+                case 'websocat': example = 'websocat ws://echo.websocket.org'; break;
+                default: example = tool + ' [args]';
+            }
+            document.getElementById('example').innerText = 'Example: ' + example;
+        }
+        updateCommandExample();
+    </script>
+    <div class="section">
+        <h2>Curl/GraphQL Test</h2>
+        <form hx-post="/api/curl" hx-target="#curl-output" hx-swap="innerHTML">
+            <label for="url">URL:</label>
+            <input type="text" id="url" name="url" placeholder="e.g. https://api.github.com">
+            <label for="graphql">GraphQL Query (optional):</label>
+            <textarea id="graphql" name="graphql" rows="4" placeholder="{ user(login: \"octocat\") { name } }"></textarea>
+            <button type="submit">Test</button>
+        </form>
+        <div id="curl-output" class="output"></div>
+    </div>
+    <div class="section">
+        <h2>Network Info</h2>
+        <form hx-post="/api/network" hx-target="#network-output" hx-swap="innerHTML">
+            <label for="host">Host/IP:</label>
+            <input type="text" id="host" name="host" placeholder="e.g. 8.8.8.8 or google.com">
+            <button type="submit">Get Info</button>
+        </form>
+        <div id="network-output" class="output"></div>
+    </div>
+</body>
+</html>
