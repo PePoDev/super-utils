@@ -64,6 +64,40 @@ docker run --rm quay.io/pepodev/super-utils "mysqldump --help"
 docker run --rm -v ./service-account:./service-account quay.io/pepodev/super-utils "gcloud activate ./service-account/gcp && gsutils -m copy -r ./dir/ gs://some-bucket"
 ```
 
+### Multi-Architecture Build (Local Testing)
+
+To test multi-architecture builds locally, you need Docker Buildx:
+
+```bash
+# 1. Create a new builder instance (one-time setup)
+docker buildx create --name multiarch --driver docker-container --use
+docker buildx inspect --bootstrap
+
+# 2. Build for multiple architectures
+# Build and load for local testing (single platform at a time)
+docker buildx build --platform linux/amd64 -t super-utils:amd64 --load .
+docker buildx build --platform linux/arm64 -t super-utils:arm64 --load .
+
+# 3. Test the built images
+docker run --rm super-utils:amd64 /app/super-utils --version
+docker run --rm super-utils:arm64 /app/super-utils --version
+
+# 4. Build for multiple platforms and push to registry
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t quay.io/pepodev/super-utils:latest \
+  --push .
+
+# 5. Build without pushing (just verify it builds)
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t super-utils:multiarch .
+```
+
+**Note:**
+- `--load` only works with single platform builds
+- For multi-platform builds, you must use `--push` to a registry or omit both flags to just verify the build
+- QEMU is automatically configured by Docker Desktop for cross-platform builds
+- On Linux, you may need to install QEMU: `docker run --privileged --rm tonistiigi/binfmt --install all`
+
 ### Helm (Kubernetes)
 
 ```bash

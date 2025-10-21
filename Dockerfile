@@ -19,6 +19,9 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s
 # Final stage
 FROM alpine:latest
 
+ARG TARGETOS
+ARG TARGETARCH
+
 LABEL maintainer="PePoDev"
 LABEL description="Super Utils - A comprehensive DevOps utilities container"
 
@@ -50,19 +53,19 @@ RUN apk --no-cache add --update \
     ipvsadm libc6-compat net-snmp-tools nftables ngrep \
     openssl scapy strace util-linux websocat \
     # Additional requested tools
-    ctop dhcping ethtool iperf liboping nmap-nping \
-    py-crypto py2-virtualenv python2 termshark netgen && \
-    # Install calicoctl separately (binary download)
-    wget -O /usr/local/bin/calicoctl https://github.com/projectcalico/calico/releases/latest/download/calicoctl-linux-amd64 && \
+    ctop dhcping ethtool iperf liboping nmap-nping termshark && \
+    # Install calicoctl separately (binary download) - multi-arch support
+    wget -O /usr/local/bin/calicoctl https://github.com/projectcalico/calico/releases/latest/download/calicoctl-linux-${TARGETARCH} && \
     chmod +x /usr/local/bin/calicoctl && \
     # Clean up
     rm -rf /var/cache/apk/* /tmp/*
 
 # Install Terraform
 ARG TERRAFORM_VERSION=0.12.21
-RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-RUN unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-RUN mv terraform /usr/bin/terraform
+RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
+    rm terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
+    mv terraform /usr/bin/terraform
 
 # Install AWS CLI
 RUN pip3 install --no-cache-dir awscli && \
@@ -79,7 +82,6 @@ RUN wget -q https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz &&
 
 # Install MSSQL Tools (only for amd64 architecture as ARM64 is not officially supported)
 ARG MSSQL_VERSION=17.5.2.1-1
-ARG TARGETARCH
 ENV MSSQL_VERSION=${MSSQL_VERSION}
 ENV PATH=$PATH:/opt/mssql-tools/bin
 
