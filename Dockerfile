@@ -1,5 +1,5 @@
 # Build stage
-FROM --platform=$BUILDPLATFORM golang:alpine AS builder
+FROM golang:alpine AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -61,7 +61,7 @@ RUN apk --no-cache add --update \
     rm -rf /var/cache/apk/* /tmp/*
 
 # Install Terraform
-ARG TERRAFORM_VERSION=1.14.0
+ARG TERRAFORM_VERSION=1.13.4
 RUN wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
     rm terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
@@ -80,7 +80,6 @@ RUN wget -q https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz &&
 ARG MSSQL_VERSION=17.5.2.1-1
 ENV MSSQL_VERSION=${MSSQL_VERSION}
 ENV PATH=$PATH:/opt/mssql-tools/bin
-
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
     curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --import - && \
     curl -sSL -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_${MSSQL_VERSION}_amd64.apk && \
