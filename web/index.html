@@ -3,231 +3,1779 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>super-utils Debugger</title>
+    <title>super-utils | Pod Utilities</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        .output { background: #222; color: #eee; padding: 1em; border-radius: 5px; margin-top: 1em; white-space: pre-wrap; }
-        .section { margin-bottom: 2em; }
-        label { display: block; margin-bottom: 0.5em; }
-        input, textarea, select { width: 100%; margin-bottom: 1em; }
-        button { padding: 0.5em 1em; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .header-links {
+            margin-top: 15px;
+        }
+
+        .header-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .header-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f7fa;
+            border-bottom: 2px solid #e1e8ed;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #657786;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: #e8f4f8;
+            color: #667eea;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Shell Terminal Styles */
+        .terminal-container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            margin-left: 15px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        #terminal {
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .xterm-viewport {
+            overflow-y: auto !important;
+        }
+
+        .xterm-screen {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #27c93f;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #20a834;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 201, 63, 0.4);
+        }
+
+        .btn-danger {
+            background: #ff5f56;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e54940;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 95, 86, 0.4);
+        }
+
+        .btn-warning {
+            background: #ffbd2e;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e5a825;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 189, 46, 0.4);
+        }
+
+        /* Service Emulator Styles */
+        .service-section {
+            margin-bottom: 30px;
+        }
+
+        .service-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .service-card {
+            background: #f5f7fa;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .service-card:hover {
+            border-color: #667eea;
+            background: #e8f4f8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .service-card input[type="checkbox"] {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .service-card label {
+            display: block;
+            cursor: pointer;
+            padding-right: 30px;
+        }
+
+        .service-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .service-description {
+            color: #657786;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .service-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-stopped {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-running {
+            background: #55efc4;
+            color: #00b894;
+        }
+
+        .status-error {
+            background: #fab1a0;
+            color: #d63031;
+        }
+
+        .control-panel {
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-buttons .btn {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .service-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+
+        .service-output:empty::before {
+            content: "No output yet. Start a service to see logs...";
+            color: #666;
+            font-style: italic;
+        }
+
+        .selection-info {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .selection-info strong {
+            color: #667eea;
+        }
+
+        /* System Monitor Styles */
+        .info-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .info-section pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .info-section .metrics {
+            background: #f5f7fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-section .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .info-section .metric:last-child {
+            border-bottom: none;
+        }
+
+        .info-section .metric-label {
+            color: #657786;
+            font-weight: 500;
+        }
+
+        .info-section .metric-value {
+            color: #333;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Network Speed Styles */
+        .net-interface {
+            background: #f5f7fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+
+        .net-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e1e8ed;
+            font-size: 1.1em;
+        }
+
+        .net-capabilities {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .net-capabilities strong {
+            color: #667eea;
+        }
+
+        .net-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .net-totals {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            color: #657786;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+        }
+
+        /* Speed Test Styles */
+        .speed-test-container {
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .speed-test-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .speed-test-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .speed-test-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .speed-test-results {
+            margin-top: 20px;
+        }
+
+        .speed-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .speed-result-label {
+            color: #657786;
+            font-weight: 500;
+            font-size: 1em;
+        }
+
+        .speed-result-value {
+            font-weight: 700;
+            font-size: 1.3em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .speed-result-value.download {
+            color: #0dbc79;
+        }
+
+        .speed-result-value.upload {
+            color: #2472c8;
+        }
+
+        .speed-result-value.ping {
+            color: #667eea;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
-    <h1>super-utils Debugger</h1>
-    <div class="section">
-        <h2>Tool Launcher</h2>
-        <form id="tool-form" hx-post="/api/shell" hx-target="#tool-output" hx-swap="innerHTML">
-            <label for="tool">Select Tool:</label>
-            <select id="tool" name="tool" onchange="updateCommandExample()">
-                <optgroup label="Network & Diagnostic Tools">
-                    <option value="apache2-utils">apache2-utils (ab, htpasswd)</option>
-                    <option value="arping">arping</option>
-                    <option value="bind-tools">bind-tools (dig, nslookup)</option>
-                    <option value="bird">bird (BGP routing)</option>
-                    <option value="bridge-utils">bridge-utils (brctl)</option>
-                    <option value="busybox">busybox</option>
-                    <option value="busybox-extras">busybox-extras</option>
-                    <option value="calicoctl">calicoctl</option>
-                    <option value="conntrack-tools">conntrack-tools</option>
-                    <option value="ctop">ctop (container monitoring)</option>
-                    <option value="curl">curl</option>
-                    <option value="dhcping">dhcping</option>
-                    <option value="drill">drill (DNS lookup)</option>
-                    <option value="ethtool">ethtool</option>
-                    <option value="fping">fping</option>
-                    <option value="httpie">httpie (http)</option>
-                    <option value="iftop">iftop</option>
-                    <option value="iperf">iperf</option>
-                    <option value="iperf3">iperf3</option>
-                    <option value="iproute2">iproute2 (ip, ss)</option>
-                    <option value="ipset">ipset</option>
-                    <option value="iptables">iptables</option>
-                    <option value="iptraf-ng">iptraf-ng</option>
-                    <option value="iputils">iputils (ping, traceroute)</option>
-                    <option value="ipvsadm">ipvsadm</option>
-                    <option value="liboping">liboping (oping)</option>
-                    <option value="mii-tool">mii-tool</option>
-                    <option value="mtr">mtr</option>
-                    <option value="net-snmp-tools">net-snmp-tools (snmpget)</option>
-                    <option value="netcat-openbsd">netcat-openbsd (nc)</option>
-                    <option value="netgen">netgen</option>
-                    <option value="nftables">nftables (nft)</option>
-                    <option value="ngrep">ngrep</option>
-                    <option value="nmap">nmap</option>
-                    <option value="nmap-nping">nmap-nping (nping)</option>
-                    <option value="scapy">scapy</option>
-                    <option value="socat">socat</option>
-                    <option value="strace">strace</option>
-                    <option value="tcpdump">tcpdump</option>
-                    <option value="tcptraceroute">tcptraceroute</option>
-                    <option value="termshark">termshark</option>
-                    <option value="tshark">tshark</option>
-                    <option value="websocat">websocat</option>
-                </optgroup>
-                <optgroup label="File & Text Processing">
-                    <option value="awk">awk</option>
-                    <option value="cut">cut</option>
-                    <option value="diff">diff</option>
-                    <option value="file">file</option>
-                    <option value="find">find</option>
-                    <option value="grep">grep</option>
-                    <option value="jq">jq (JSON processor)</option>
-                    <option value="sed">sed</option>
-                    <option value="vi">vi</option>
-                    <option value="vim">vim</option>
-                    <option value="wc">wc</option>
-                    <option value="gzip">gzip</option>
-                    <option value="cpio">cpio</option>
-                    <option value="tar">tar</option>
-                </optgroup>
-                <optgroup label="System & Development">
-                    <option value="bash">bash</option>
-                    <option value="git">git</option>
-                    <option value="libc6-compat">libc6-compat (ldd)</option>
-                    <option value="openssl">openssl</option>
-                    <option value="py-crypto">py-crypto</option>
-                    <option value="py2-virtualenv">py2-virtualenv (virtualenv)</option>
-                    <option value="python2">python2</option>
-                    <option value="python3">python3</option>
-                    <option value="util-linux">util-linux (lsblk, mount)</option>
-                </optgroup>
-                <optgroup label="Web & Transfer Tools">
-                    <option value="curl">curl</option>
-                    <option value="wget">wget</option>
-                    <option value="dig">dig</option>
-                    <option value="nslookup">nslookup</option>
-                    <option value="telnet">telnet</option>
-                    <option value="ssh">ssh</option>
-                    <option value="lftp">lftp</option>
-                    <option value="rsync">rsync</option>
-                    <option value="scp">scp</option>
-                    <option value="ab">ApacheBench (ab)</option>
-                </optgroup>
-                <optgroup label="Database Clients">
-                    <option value="mysql">mysql</option>
-                    <option value="psql">psql (PostgreSQL)</option>
-                    <option value="mongo">mongo (MongoDB)</option>
-                    <option value="redis-cli">redis-cli</option>
-                </optgroup>
-            </select>
-            <label for="args">Arguments:</label>
-            <input type="text" id="args" name="args" placeholder="e.g. -c 4 google.com">
-            <div style="font-size:0.9em; color:#888; margin-bottom:1em;" id="example"></div>
-            <button type="submit">Run Tool</button>
-        </form>
-        <div id="tool-output" class="output"></div>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 super-utils</h1>
+            <p>Pod Utilities & Service Emulator</p>
+            <div class="header-links">
+                <a href="/shop" class="header-link">� Book Shop</a>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('monitor')">
+                <span>📊 System Information</span>
+            </div>
+            <div class="tab" onclick="switchTab('shell')">
+                <span>💻 Shell Terminal</span>
+            </div>
+            <div class="tab" onclick="switchTab('services')">
+                <span>⚙️ Service Emulator</span>
+            </div>
+        </div>
+
+        <!-- System Monitor Tab -->
+        <div id="monitor-tab" class="tab-content active">
+            <div class="service-section">
+                <div class="info-grid" id="system-info-grid">
+                    <!-- System info will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Shell Terminal Tab -->
+        <div id="shell-tab" class="tab-content">
+            <div class="service-section">
+                <h2>Interactive Shell Terminal</h2>
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <div class="terminal-buttons">
+                            <div class="terminal-button close"></div>
+                            <div class="terminal-button minimize"></div>
+                            <div class="terminal-button maximize"></div>
+                        </div>
+                        <div class="terminal-title">pod-shell@super-utils</div>
+                    </div>
+                    <div id="terminal"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Emulator Tab -->
+        <div id="services-tab" class="tab-content">
+            <div class="service-section">
+                <h2>📚 Book Shop Microservices Emulator</h2>
+                <p style="color: #657786; margin-bottom: 20px;">
+                    Control and monitor the book shop microservices architecture. Each service handles a specific business domain.
+                </p>
+                
+                <div class="control-panel">
+                    <div class="control-buttons">
+                        <button class="btn btn-success" onclick="emulatorStartAll()">▶️ Start All Services</button>
+                        <button class="btn btn-danger" onclick="emulatorStopAll()">⏹️ Stop All Services</button>
+                        <button class="btn btn-warning" onclick="emulatorReset()">🔄 Reset All Services</button>
+                        <div class="selection-info" style="margin: 0; flex: 1; max-width: 300px;">
+                            <strong>Status:</strong> 
+                            <span style="color: #00b894;">Running: <span id="emulator-running-count">0</span></span> | 
+                            <span style="color: #d63031;">Stopped: <span id="emulator-stopped-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="services-grid" id="emulator-services-grid">
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #657786;">
+                        Loading services...
+                    </div>
+                </div>
+
+                <div class="service-section">
+                    <h3 style="color: #667eea; margin-top: 30px;">Architecture Overview</h3>
+                    <div class="info-section">
+                        <div class="metrics">
+                            <p style="margin-bottom: 10px;"><strong>Service Flow:</strong></p>
+                            <p style="color: #657786; line-height: 1.8;">
+                                Users authenticate → Browse catalog → Add to cart → Create order → 
+                                Process payment → Update inventory → Send notifications → Leave reviews
+                            </p>
+                            <p style="margin-top: 15px; color: #657786;">
+                                Use the controls above to start, stop, or reset services. 
+                                Click individual service cards to start/stop them independently.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script>
-        function updateCommandExample() {
-            var tool = document.getElementById('tool').value;
-            var example = '';
-            switch(tool) {
-                case 'ping': example = 'ping -c 4 google.com'; break;
-                case 'curl': example = 'curl https://api.github.com'; break;
-                case 'traceroute': example = 'traceroute google.com'; break;
-                case 'tcpdump': example = 'tcpdump -i eth0'; break;
-                case 'awk': example = "awk '{print $1}' file.txt"; break;
-                case 'grep': example = 'grep pattern file.txt'; break;
-                case 'nmap': example = 'nmap 8.8.8.8'; break;
-                case 'ssh': example = 'ssh user@host'; break;
-                case 'mysql': example = 'mysql -h host -u user -p'; break;
-                case 'psql': example = 'psql -h host -U user'; break;
-                case 'ab': example = 'ab -n 100 -c 10 http://host/'; break;
-                case 'apache2-utils': example = 'ab -n 100 -c 10 http://host/'; break;
-                case 'arping': example = 'arping -c 4 192.168.1.1'; break;
-                case 'bash': example = 'bash -c "echo Hello World"'; break;
-                case 'bind-tools': example = 'dig google.com'; break;
-                case 'bird': example = 'bird -c /etc/bird.conf'; break;
-                case 'bridge-utils': example = 'brctl show'; break;
-                case 'busybox': example = 'busybox --list'; break;
-                case 'busybox-extras': example = 'busybox-extras --list'; break;
-                case 'calicoctl': example = 'calicoctl node status'; break;
-                case 'conntrack-tools': example = 'conntrack -L'; break;
-                case 'ctop': example = 'ctop'; break;
-                case 'dhcping': example = 'dhcping -s 192.168.1.1'; break;
-                case 'drill': example = 'drill google.com'; break;
-                case 'ethtool': example = 'ethtool eth0'; break;
-                case 'file': example = 'file /bin/bash'; break;
-                case 'fping': example = 'fping 8.8.8.8'; break;
-                case 'httpie': example = 'http GET https://api.github.com'; break;
-                case 'iftop': example = 'iftop -i eth0'; break;
-                case 'iperf': example = 'iperf -c server'; break;
-                case 'iperf3': example = 'iperf3 -c server'; break;
-                case 'iproute2': example = 'ip addr'; break;
-                case 'ipset': example = 'ipset list'; break;
-                case 'iptables': example = 'iptables -L'; break;
-                case 'iptraf-ng': example = 'iptraf-ng'; break;
-                case 'iputils': example = 'ping 8.8.8.8'; break;
-                case 'ipvsadm': example = 'ipvsadm -L -n'; break;
-                case 'jq': example = 'jq . file.json'; break;
-                case 'libc6-compat': example = 'ldd --version'; break;
-                case 'liboping': example = 'oping 8.8.8.8'; break;
-                case 'mii-tool': example = 'mii-tool eth0'; break;
-                case 'mtr': example = 'mtr google.com'; break;
-                case 'net-snmp-tools': example = 'snmpget --version'; break;
-                case 'netcat-openbsd': example = 'nc -zv host 80'; break;
-                case 'netgen': example = 'netgen -batch'; break;
-                case 'nftables': example = 'nft list ruleset'; break;
-                case 'ngrep': example = 'ngrep -d eth0 port 80'; break;
-                case 'nmap-nping': example = 'nping --tcp google.com'; break;
-                case 'openssl': example = 'openssl version'; break;
-                case 'py-crypto': example = 'python2 -c "import Crypto"'; break;
-                case 'py2-virtualenv': example = 'virtualenv venv'; break;
-                case 'python2': example = 'python2 --version'; break;
-                case 'python3': example = 'python3 --version'; break;
-                case 'scapy': example = 'scapy'; break;
-                case 'socat': example = 'socat TCP4-LISTEN:1234,reuseaddr,fork EXEC:/bin/cat'; break;
-                case 'strace': example = 'strace ls'; break;
-                case 'termshark': example = 'termshark -i eth0'; break;
-                case 'tshark': example = 'tshark -i eth0'; break;
-                case 'util-linux': example = 'lsblk'; break;
-                case 'vim': example = 'vim file.txt'; break;
-                case 'websocat': example = 'websocat ws://echo.websocket.org'; break;
-                case 'git': example = 'git status'; break;
-                case 'wget': example = 'wget https://example.com/file.zip'; break;
-                case 'dig': example = 'dig google.com'; break;
-                case 'telnet': example = 'telnet host 80'; break;
-                case 'lftp': example = 'lftp ftp://host'; break;
-                case 'rsync': example = 'rsync -avz source/ dest/'; break;
-                case 'scp': example = 'scp file user@host:/path'; break;
-                case 'mongo': example = 'mongo --host localhost'; break;
-                case 'redis-cli': example = 'redis-cli ping'; break;
-                case 'cut': example = 'cut -d, -f1 file.csv'; break;
-                case 'diff': example = 'diff file1.txt file2.txt'; break;
-                case 'find': example = 'find . -name "*.txt"'; break;
-                case 'sed': example = 'sed "s/old/new/g" file.txt'; break;
-                case 'vi': example = 'vi file.txt'; break;
-                case 'wc': example = 'wc -l file.txt'; break;
-                case 'gzip': example = 'gzip file.txt'; break;
-                case 'cpio': example = 'cpio -o < files.list > archive.cpio'; break;
-                case 'tar': example = 'tar -czf archive.tar.gz files/'; break;
-                default: example = tool + ' [args]';
-            }
-            document.getElementById('example').innerText = 'Example: ' + example;
+        // Initialize on page load
+        let systemInfoInterval;
+        let networkSpeedInterval;
+        let previousNetStats = {};
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemInfo();
+            // Auto-refresh every 5 seconds
+            systemInfoInterval = setInterval(loadSystemInfo, 5000);
+            // Start network speed monitoring
+            startNetworkSpeedMonitoring();
+        });
+
+        function startNetworkSpeedMonitoring() {
+            // First reading (baseline)
+            fetchNetworkStats().then(() => {
+                // Wait 2 seconds, then start monitoring every 2 seconds
+                setTimeout(() => {
+                    updateNetworkSpeed();
+                    networkSpeedInterval = setInterval(updateNetworkSpeed, 2000);
+                }, 2000);
+            });
         }
-        updateCommandExample();
+
+        function fetchNetworkStats() {
+            return fetch('/api/netspeed')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.raw) {
+                        const lines = data.raw.trim().split('\n');
+                        const stats = {};
+                        lines.forEach(line => {
+                            const parts = line.split('|');
+                            if (parts.length >= 10) {
+                                stats[parts[0]] = {
+                                    rx_bytes: parseInt(parts[1]),
+                                    tx_bytes: parseInt(parts[2]),
+                                    rx_packets: parseInt(parts[3]),
+                                    tx_packets: parseInt(parts[4]),
+                                    rx_errors: parseInt(parts[5]),
+                                    tx_errors: parseInt(parts[6]),
+                                    state: parts[7],
+                                    speed: parts[8] || 'Unknown',
+                                    duplex: parts[9] || 'Unknown',
+                                    timestamp: data.timestamp
+                                };
+                            }
+                        });
+                        return stats;
+                    }
+                    return {};
+                })
+                .catch(error => {
+                    console.error('Error fetching network stats:', error);
+                    return {};
+                });
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function formatSpeed(bytesPerSecond) {
+            if (bytesPerSecond === 0) return '0 B/s';
+            const k = 1024;
+            const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+            const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+            return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function updateNetworkSpeed() {
+            const currentStats = await fetchNetworkStats();
+            const speedContainer = document.getElementById('network-speed-data');
+            
+            if (!speedContainer) return;
+
+            let html = '';
+            
+            for (const [iface, current] of Object.entries(currentStats)) {
+                const previous = previousNetStats[iface];
+                
+                if (previous && previous.timestamp) {
+                    const timeDiff = current.timestamp - previous.timestamp;
+                    
+                    if (timeDiff > 0) {
+                        const rxDiff = current.rx_bytes - previous.rx_bytes;
+                        const txDiff = current.tx_bytes - previous.tx_bytes;
+                        
+                        const rxSpeed = rxDiff / timeDiff;
+                        const txSpeed = txDiff / timeDiff;
+                        
+                        const stateColor = current.state === 'up' ? '#0dbc79' : '#cd3131';
+                        const stateIcon = current.state === 'up' ? '🟢' : '🔴';
+                        
+                        html += `
+                            <div class="net-interface">
+                                <div class="net-header">
+                                    <strong style="color: #667eea;">${stateIcon} ${iface}</strong>
+                                    <span style="color: ${stateColor}; text-transform: uppercase; font-size: 0.85em;">${current.state}</span>
+                                </div>
+                                <div class="net-capabilities">
+                                    <span>⚡ Speed: <strong>${current.speed}</strong></span>
+                                    <span>🔄 Duplex: <strong>${current.duplex}</strong></span>
+                                </div>
+                                <div class="net-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">📥 Download:</span>
+                                        <span class="stat-value" style="color: #0dbc79;">${formatSpeed(rxSpeed)}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">📤 Upload:</span>
+                                        <span class="stat-value" style="color: #2472c8;">${formatSpeed(txSpeed)}</span>
+                                    </div>
+                                </div>
+                                <div class="net-totals">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Total RX:</span>
+                                        <span class="stat-value">${formatBytes(current.rx_bytes)}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Total TX:</span>
+                                        <span class="stat-value">${formatBytes(current.tx_bytes)}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Errors:</span>
+                                        <span class="stat-value" style="color: ${current.rx_errors + current.tx_errors > 0 ? '#cd3131' : '#0dbc79'};">
+                                            ${current.rx_errors + current.tx_errors}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // First time seeing this interface - show placeholder with basic info
+                    const stateColor = current.state === 'up' ? '#0dbc79' : '#cd3131';
+                    const stateIcon = current.state === 'up' ? '🟢' : '🔴';
+                    
+                    html += `
+                        <div class="net-interface">
+                            <div class="net-header">
+                                <strong style="color: #667eea;">${stateIcon} ${iface}</strong>
+                                <span style="color: ${stateColor}; text-transform: uppercase; font-size: 0.85em;">${current.state}</span>
+                            </div>
+                            <div class="net-capabilities">
+                                <span>⚡ Speed: <strong>${current.speed}</strong></span>
+                                <span>🔄 Duplex: <strong>${current.duplex}</strong></span>
+                            </div>
+                            <div class="net-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">📥 Download:</span>
+                                    <span class="stat-value" style="color: #0dbc79;">0 B/s</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">📤 Upload:</span>
+                                    <span class="stat-value" style="color: #2472c8;">0 B/s</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (html) {
+                speedContainer.innerHTML = html;
+            }
+            
+            previousNetStats = currentStats;
+        }
+
+        // System Monitor
+        function loadSystemInfo() {
+            const grid = document.getElementById('system-info-grid');
+            if (!grid) {
+                console.error('system-info-grid element not found');
+                return;
+            }
+            
+            fetch('/api/sysinfo')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('System info loaded:', data);
+                    displaySystemInfo(data);
+                })
+                .catch(error => {
+                    console.error('Error loading system info:', error);
+                    grid.innerHTML = `<div class="info-section"><h3>❌ Error</h3><pre>${error.message}</pre></div>`;
+                });
+        }
+
+        function displaySystemInfo(data) {
+            console.log('displaySystemInfo called with data:', data);
+            const grid = document.getElementById('system-info-grid');
+            if (!grid) {
+                console.error('Grid element not found in displaySystemInfo');
+                return;
+            }
+            let html = '';
+
+            // System Overview
+            if (data.hostname || data.os || data.kernel) {
+                html += `
+                    <div class="info-section">
+                        <h3>💻 System Overview</h3>
+                        <div class="metrics">
+                            ${data.hostname ? `<div class="metric"><span class="metric-label">Hostname:</span><span class="metric-value">${data.hostname}</span></div>` : ''}
+                            ${data.os ? `<div class="metric"><span class="metric-label">OS:</span><span class="metric-value">${data.os}</span></div>` : ''}
+                            ${data.kernel ? `<div class="metric"><span class="metric-label">Kernel:</span><span class="metric-value">${data.kernel}</span></div>` : ''}
+                            ${data.uptime ? `<div class="metric"><span class="metric-label">Uptime:</span><span class="metric-value">${data.uptime}</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // CPU Info
+            if (data.cpu) {
+                html += `
+                    <div class="info-section">
+                        <h3>🔧 CPU Information</h3>
+                        <pre>${data.cpu}</pre>
+                    </div>
+                `;
+            }
+
+            // Memory Info
+            if (data.memory) {
+                html += `
+                    <div class="info-section">
+                        <h3>💾 Memory Usage</h3>
+                        <pre>${data.memory}</pre>
+                    </div>
+                `;
+            }
+
+            // Disk Info
+            if (data.disk) {
+                html += `
+                    <div class="info-section">
+                        <h3>💿 Disk Usage</h3>
+                        <pre>${data.disk}</pre>
+                    </div>
+                `;
+            }
+
+            // Network Interfaces
+            if (data.network) {
+                html += `
+                    <div class="info-section">
+                        <h3>🌐 Network Interfaces</h3>
+                        <pre>${data.network}</pre>
+                    </div>
+                `;
+            }
+
+            // Network Interface Details (Speed & Capabilities)
+            if (data.network_details) {
+                html += `
+                    <div class="info-section">
+                        <h3>⚡ Network Interface Capabilities</h3>
+                        <pre>${data.network_details}</pre>
+                    </div>
+                `;
+            }
+
+            // Processes
+            if (data.processes) {
+                html += `
+                    <div class="info-section">
+                        <h3>⚙️ Top Processes</h3>
+                        <pre>${data.processes}</pre>
+                    </div>
+                `;
+            }
+
+            // Load Average
+            if (data.load) {
+                html += `
+                    <div class="info-section">
+                        <h3>📈 System Load</h3>
+                        <pre>${data.load}</pre>
+                    </div>
+                `;
+            }
+
+            // Docker Info (if available)
+            if (data.docker) {
+                html += `
+                    <div class="info-section">
+                        <h3>🐳 Docker Info</h3>
+                        <pre>${data.docker}</pre>
+                    </div>
+                `;
+            }
+
+            // Save current network speed data if it exists
+            const existingNetworkSpeed = document.getElementById('network-speed-data');
+            const savedNetworkSpeedHTML = existingNetworkSpeed ? existingNetworkSpeed.innerHTML : '';
+            
+            // Save current speed test results if they exist
+            const existingSpeedTestResults = document.getElementById('speed-test-results');
+            const savedSpeedTestHTML = existingSpeedTestResults ? existingSpeedTestResults.innerHTML : '';
+            
+            grid.innerHTML = html;
+            
+            // Add network speed section
+            const networkSpeedSection = document.createElement('div');
+            networkSpeedSection.className = 'info-section';
+            networkSpeedSection.id = 'network-speed-section';
+            networkSpeedSection.innerHTML = `
+                <h3>📊 Real-time Network Speed</h3>
+                <div id="network-speed-data">${savedNetworkSpeedHTML}</div>
+            `;
+            grid.appendChild(networkSpeedSection);
+            
+            // Add speed test section - restore previous results if they exist
+            const speedTestSection = document.createElement('div');
+            speedTestSection.className = 'info-section';
+            speedTestSection.id = 'speed-test-section';
+            speedTestSection.innerHTML = `
+                <h3>🚀 Internet Speed Test</h3>
+                <div class="speed-test-container">
+                    <button class="speed-test-btn" onclick="runSpeedTest()" id="speed-test-btn">
+                        ▶️ Run Speed Test
+                    </button>
+                    <div id="speed-test-results">${savedSpeedTestHTML}</div>
+                </div>
+            `;
+            grid.appendChild(speedTestSection);
+        }
+
+        // Speed Test Function
+        async function runSpeedTest() {
+            const btn = document.getElementById('speed-test-btn');
+            const resultsDiv = document.getElementById('speed-test-results');
+            
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Running Speed Test...';
+            
+            resultsDiv.innerHTML = '<div class="loading">Testing network speed, please wait...</div>';
+            
+            try {
+                // Test download speed
+                resultsDiv.innerHTML = '<div class="loading">Testing download speed...</div>';
+                console.log('Starting download test...');
+                const downloadSpeed = await testDownloadSpeed();
+                console.log('Download speed:', downloadSpeed);
+                
+                // Test upload speed
+                resultsDiv.innerHTML = '<div class="loading">Testing upload speed...</div>';
+                console.log('Starting upload test...');
+                const uploadSpeed = await testUploadSpeed();
+                console.log('Upload speed:', uploadSpeed);
+                
+                // Test ping
+                resultsDiv.innerHTML = '<div class="loading">Testing latency...</div>';
+                console.log('Starting ping test...');
+                const ping = await testPing();
+                console.log('Ping:', ping);
+                
+                // Display results
+                console.log('Displaying results...');
+                resultsDiv.innerHTML = `
+                    <div class="speed-result-item">
+                        <span class="speed-result-label">📥 Download Speed:</span>
+                        <span class="speed-result-value download">${downloadSpeed}</span>
+                    </div>
+                    <div class="speed-result-item">
+                        <span class="speed-result-label">📤 Upload Speed:</span>
+                        <span class="speed-result-value upload">${uploadSpeed}</span>
+                    </div>
+                    <div class="speed-result-item">
+                        <span class="speed-result-label">📡 Ping:</span>
+                        <span class="speed-result-value ping">${ping}</span>
+                    </div>
+                `;
+                console.log('Results displayed successfully');
+            } catch (error) {
+                console.error('Speed test error:', error);
+                resultsDiv.innerHTML = `<div style="color: #cd3131; padding: 15px;">❌ Error: ${error.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '▶️ Run Speed Test';
+            }
+        }
+
+        async function testDownloadSpeed() {
+            const testUrl = 'https://speed.cloudflare.com/__down?bytes=25000000'; // 25MB test file
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(testUrl);
+                const blob = await response.blob();
+                const endTime = performance.now();
+                
+                const durationSeconds = (endTime - startTime) / 1000;
+                const sizeMB = blob.size / (1024 * 1024);
+                const speedMbps = (sizeMB * 8) / durationSeconds;
+                
+                return speedMbps.toFixed(2) + ' Mbps';
+            } catch (error) {
+                return 'Test failed';
+            }
+        }
+
+        async function testUploadSpeed() {
+            const uploadSize = 5 * 1024 * 1024; // 5MB
+            const data = new Uint8Array(uploadSize);
+            
+            try {
+                const startTime = performance.now();
+                
+                await fetch('/api/speedtest/upload', {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/octet-stream'
+                    }
+                });
+                
+                const endTime = performance.now();
+                const durationSeconds = (endTime - startTime) / 1000;
+                const sizeMB = uploadSize / (1024 * 1024);
+                const speedMbps = (sizeMB * 8) / durationSeconds;
+                
+                return speedMbps.toFixed(2) + ' Mbps';
+            } catch (error) {
+                return 'Test failed';
+            }
+        }
+
+        async function testPing() {
+            const pingUrl = 'https://cloudflare.com/favicon.ico';
+            const samples = 5;
+            let totalTime = 0;
+            
+            try {
+                for (let i = 0; i < samples; i++) {
+                    const startTime = performance.now();
+                    await fetch(pingUrl, { cache: 'no-cache' });
+                    const endTime = performance.now();
+                    totalTime += (endTime - startTime);
+                }
+                
+                const avgPing = totalTime / samples;
+                return avgPing.toFixed(0) + ' ms';
+            } catch (error) {
+                return 'Test failed';
+            }
+        }
+
+        // Tab Switching
+        // Tab Switching
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            event.target.closest('.tab').classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // Manage auto-refresh based on active tab
+            if (tabName === 'monitor') {
+                if (!systemInfoInterval) {
+                    loadSystemInfo();
+                    systemInfoInterval = setInterval(loadSystemInfo, 5000);
+                }
+                if (!networkSpeedInterval) {
+                    startNetworkSpeedMonitoring();
+                }
+            } else {
+                // Clear intervals when switching away from monitor tab
+                if (systemInfoInterval) {
+                    clearInterval(systemInfoInterval);
+                    systemInfoInterval = null;
+                }
+                if (networkSpeedInterval) {
+                    clearInterval(networkSpeedInterval);
+                    networkSpeedInterval = null;
+                }
+            }
+
+            if (tabName === 'shell' && !window.terminalInitialized) {
+                initTerminal();
+            }
+        }
+
+        // Terminal Implementation
+        let term;
+        let terminalHistory = [];
+        let historyIndex = -1;
+
+        function initTerminal() {
+            if (window.terminalInitialized) return;
+            
+            const fitAddon = new FitAddon.FitAddon();
+            
+            term = new Terminal({
+                cursorBlink: true,
+                fontSize: 14,
+                fontFamily: 'Courier New, monospace',
+                scrollback: 10000,
+                convertEol: true,
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#d4d4d4',
+                    selection: 'rgba(255, 255, 255, 0.3)',
+                    black: '#000000',
+                    red: '#cd3131',
+                    green: '#0dbc79',
+                    yellow: '#e5e510',
+                    blue: '#2472c8',
+                    magenta: '#bc3fbc',
+                    cyan: '#11a8cd',
+                    white: '#e5e5e5',
+                    brightBlack: '#666666',
+                    brightRed: '#f14c4c',
+                    brightGreen: '#23d18b',
+                    brightYellow: '#f5f543',
+                    brightBlue: '#3b8eea',
+                    brightMagenta: '#d670d6',
+                    brightCyan: '#29b8db',
+                    brightWhite: '#e5e5e5'
+                }
+            });
+            
+            term.loadAddon(fitAddon);
+            term.open(document.getElementById('terminal'));
+            fitAddon.fit();
+            
+            // Welcome message
+            term.writeln('\x1b[1;32mWelcome to super-utils Shell Terminal\x1b[0m');
+            term.writeln('Type your commands and press Enter to execute.');
+            term.writeln('Use Ctrl+C to interrupt running commands.');
+            term.writeln('');
+            
+            // Initialize prompt
+            let currentLine = '';
+            let cursorPosition = 0;
+            let isExecuting = false;
+            
+            const prompt = () => {
+                term.write('\r\n\x1b[1;34m$\x1b[0m ');
+            };
+            
+            prompt();
+            
+            // Handle terminal input
+            term.onData(data => {
+                if (isExecuting) {
+                    // Handle Ctrl+C to interrupt
+                    if (data === '\x03') {
+                        term.writeln('\r\n^C');
+                        isExecuting = false;
+                        currentLine = '';
+                        cursorPosition = 0;
+                        prompt();
+                    }
+                    return;
+                }
+                
+                // Handle Enter key
+                if (data === '\r' || data === '\n') {
+                    const command = currentLine.trim();
+                    if (command) {
+                        term.write('\r\n');
+                        executeCommand(command);
+                        terminalHistory.push(command);
+                        historyIndex = terminalHistory.length;
+                    } else {
+                        prompt();
+                    }
+                    currentLine = '';
+                    cursorPosition = 0;
+                    return;
+                }
+                
+                // Handle Backspace
+                if (data === '\x7f' || data === '\b') {
+                    if (cursorPosition > 0) {
+                        currentLine = currentLine.slice(0, cursorPosition - 1) + currentLine.slice(cursorPosition);
+                        cursorPosition--;
+                        term.write('\b \b');
+                        // Redraw rest of line if needed
+                        if (cursorPosition < currentLine.length) {
+                            term.write(currentLine.slice(cursorPosition) + ' ');
+                            // Move cursor back
+                            for (let i = 0; i <= currentLine.length - cursorPosition; i++) {
+                                term.write('\b');
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                // Handle Ctrl+C
+                if (data === '\x03') {
+                    term.writeln('^C');
+                    currentLine = '';
+                    cursorPosition = 0;
+                    prompt();
+                    return;
+                }
+                
+                // Handle Ctrl+L (clear screen)
+                if (data === '\x0c') {
+                    term.clear();
+                    prompt();
+                    term.write(currentLine);
+                    return;
+                }
+                
+                // Handle Up Arrow (previous command)
+                if (data === '\x1b[A') {
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        // Clear current line
+                        term.write('\r\x1b[K');
+                        term.write('\x1b[1;34m$\x1b[0m ');
+                        currentLine = terminalHistory[historyIndex];
+                        cursorPosition = currentLine.length;
+                        term.write(currentLine);
+                    }
+                    return;
+                }
+                
+                // Handle Down Arrow (next command)
+                if (data === '\x1b[B') {
+                    if (historyIndex < terminalHistory.length - 1) {
+                        historyIndex++;
+                        // Clear current line
+                        term.write('\r\x1b[K');
+                        term.write('\x1b[1;34m$\x1b[0m ');
+                        currentLine = terminalHistory[historyIndex];
+                        cursorPosition = currentLine.length;
+                        term.write(currentLine);
+                    } else if (historyIndex === terminalHistory.length - 1) {
+                        historyIndex++;
+                        // Clear current line
+                        term.write('\r\x1b[K');
+                        term.write('\x1b[1;34m$\x1b[0m ');
+                        currentLine = '';
+                        cursorPosition = 0;
+                    }
+                    return;
+                }
+                
+                // Handle Left Arrow
+                if (data === '\x1b[D') {
+                    if (cursorPosition > 0) {
+                        cursorPosition--;
+                        term.write(data);
+                    }
+                    return;
+                }
+                
+                // Handle Right Arrow
+                if (data === '\x1b[C') {
+                    if (cursorPosition < currentLine.length) {
+                        cursorPosition++;
+                        term.write(data);
+                    }
+                    return;
+                }
+                
+                // Handle Home key
+                if (data === '\x1b[H' || data === '\x1bOH') {
+                    while (cursorPosition > 0) {
+                        term.write('\b');
+                        cursorPosition--;
+                    }
+                    return;
+                }
+                
+                // Handle End key
+                if (data === '\x1b[F' || data === '\x1bOF') {
+                    while (cursorPosition < currentLine.length) {
+                        term.write('\x1b[C');
+                        cursorPosition++;
+                    }
+                    return;
+                }
+                
+                // Ignore other escape sequences
+                if (data.startsWith('\x1b')) {
+                    return;
+                }
+                
+                // Handle regular characters
+                if (data >= String.fromCharCode(32) && data <= String.fromCharCode(126)) {
+                    currentLine = currentLine.slice(0, cursorPosition) + data + currentLine.slice(cursorPosition);
+                    cursorPosition++;
+                    term.write(data);
+                    // Redraw rest of line if needed
+                    if (cursorPosition < currentLine.length) {
+                        term.write(currentLine.slice(cursorPosition));
+                        // Move cursor back
+                        for (let i = cursorPosition; i < currentLine.length; i++) {
+                            term.write('\b');
+                        }
+                    }
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                fitAddon.fit();
+            });
+            
+            function executeCommand(command) {
+                isExecuting = true;
+                
+                // Send command to backend
+                fetch('/api/shell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'command=' + encodeURIComponent(command)
+                })
+                .then(response => response.text())
+                .then(output => {
+                    if (output) {
+                        // Split output by lines and write each line
+                        const lines = output.split('\n');
+                        lines.forEach((line, index) => {
+                            if (index < lines.length - 1) {
+                                term.writeln(line);
+                            } else if (line) {
+                                // Last line without newline
+                                term.write(line);
+                            }
+                        });
+                    }
+                    isExecuting = false;
+                    prompt();
+                })
+                .catch(error => {
+                    term.writeln('\x1b[31mError: ' + error.message + '\x1b[0m');
+                    isExecuting = false;
+                    prompt();
+                });
+            }
+            
+            window.terminalInitialized = true;
+        }
+
+        // Service Emulator
+        const services = [
+            { id: 'user-service', name: 'User Service', description: 'Manages user accounts and authentication (Port 8001)', status: 'stopped' },
+            { id: 'catalog-service', name: 'Catalog Service', description: 'Manages book inventory and product info (Port 8002)', status: 'stopped' },
+            { id: 'cart-service', name: 'Shopping Cart Service', description: 'Manages user shopping carts (Port 8003)', status: 'stopped' },
+            { id: 'order-service', name: 'Order Service', description: 'Handles order processing (Port 8004)', status: 'stopped' },
+            { id: 'payment-service', name: 'Payment Service', description: 'Processes payments (Port 8005)', status: 'stopped' },
+            { id: 'review-service', name: 'Review Service', description: 'Manages book reviews (Port 8006)', status: 'stopped' },
+            { id: 'notification-service', name: 'Notification Service', description: 'Sends user notifications (Port 8007)', status: 'stopped' },
+            { id: 'inventory-service', name: 'Inventory Service', description: 'Manages stock levels (Port 8008)', status: 'stopped' },
+            { id: 'api-gateway', name: 'API Gateway', description: 'Routes requests to services (Port 8000)', status: 'stopped' },
+            { id: 'service-registry', name: 'Service Registry', description: 'Service discovery (Port 8761)', status: 'stopped' }
+        ];
+
+        function renderServices() {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = services.map(service => `
+                <div class="service-card" onclick="toggleService('${service.id}')" id="card-${service.id}">
+                    <input type="checkbox" id="${service.id}" onclick="event.stopPropagation(); updateSelection()">
+                    <label for="${service.id}" onclick="event.stopPropagation()">
+                        <div class="service-name">${service.name}</div>
+                        <div class="service-description">${service.description}</div>
+                        <span class="service-status status-${service.status}" id="status-${service.id}">
+                            ${service.status.toUpperCase()}
+                        </span>
+                    </label>
+                </div>
+            `).join('');
+        }
+
+        function toggleService(id) {
+            const checkbox = document.getElementById(id);
+            checkbox.checked = !checkbox.checked;
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.services-grid input[type="checkbox"]');
+            let count = 0;
+            
+            checkboxes.forEach(cb => {
+                const card = document.getElementById('card-' + cb.id);
+                if (cb.checked) {
+                    card.classList.add('selected');
+                    count++;
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+            
+            document.getElementById('selected-count').textContent = count;
+        }
+
+        function getSelectedServices() {
+            const checkboxes = document.querySelectorAll('.services-grid input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.id);
+        }
+
+        function logToOutput(message, type = 'info') {
+            const output = document.getElementById('service-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f14c4c' : type === 'success' ? '#23d18b' : '#d4d4d4';
+            output.innerHTML += `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${color};">${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateServiceStatus(serviceId, status) {
+            const service = services.find(s => s.id === serviceId);
+            if (service) {
+                service.status = status;
+                const statusEl = document.getElementById('status-' + serviceId);
+                statusEl.className = 'service-status status-' + status;
+                statusEl.textContent = status.toUpperCase();
+            }
+        }
+
+        async function startServices() {
+            const selected = getSelectedServices();
+            if (selected.length === 0) {
+                logToOutput('No services selected', 'error');
+                return;
+            }
+            
+            logToOutput(`Starting ${selected.length} service(s)...`, 'info');
+            
+            for (const serviceId of selected) {
+                try {
+                    const response = await fetch('/api/service/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ service: serviceId })
+                    });
+                    
+                    const result = await response.json();
+                    updateServiceStatus(serviceId, 'running');
+                    logToOutput(`✓ ${serviceId} started successfully`, 'success');
+                } catch (error) {
+                    updateServiceStatus(serviceId, 'error');
+                    logToOutput(`✗ Failed to start ${serviceId}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function stopServices() {
+            const selected = getSelectedServices();
+            if (selected.length === 0) {
+                logToOutput('No services selected', 'error');
+                return;
+            }
+            
+            logToOutput(`Stopping ${selected.length} service(s)...`, 'info');
+            
+            for (const serviceId of selected) {
+                try {
+                    const response = await fetch('/api/service/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ service: serviceId })
+                    });
+                    
+                    const result = await response.json();
+                    updateServiceStatus(serviceId, 'stopped');
+                    logToOutput(`✓ ${serviceId} stopped successfully`, 'success');
+                } catch (error) {
+                    logToOutput(`✗ Failed to stop ${serviceId}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function resetServices() {
+            const selected = getSelectedServices();
+            if (selected.length === 0) {
+                logToOutput('No services selected', 'error');
+                return;
+            }
+            
+            logToOutput(`Resetting ${selected.length} service(s)...`, 'info');
+            
+            for (const serviceId of selected) {
+                try {
+                    const response = await fetch('/api/service/reset', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ service: serviceId })
+                    });
+                    
+                    const result = await response.json();
+                    updateServiceStatus(serviceId, 'stopped');
+                    logToOutput(`✓ ${serviceId} reset successfully`, 'success');
+                } catch (error) {
+                    logToOutput(`✗ Failed to reset ${serviceId}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function startAll() {
+            document.querySelectorAll('.services-grid input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateSelection();
+            startServices();
+        }
+
+        function stopAll() {
+            document.querySelectorAll('.services-grid input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateSelection();
+            stopServices();
+        }
+
+        // ============ Service Emulator Functions ============
+        function loadEmulatorServices() {
+            fetch('/api/services')
+                .then(response => response.json())
+                .then(services => {
+                    renderEmulatorServices(services);
+                    updateEmulatorStatus();
+                })
+                .catch(error => {
+                    console.error('Error loading emulator services:', error);
+                    document.getElementById('emulator-services-grid').innerHTML = 
+                        '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #d63031;">Error loading services. Please refresh the page.</div>';
+                });
+        }
+
+        function renderEmulatorServices(services) {
+            const grid = document.getElementById('emulator-services-grid');
+            grid.innerHTML = services.map(service => {
+                const isRunning = service.status === 'running';
+                const statusClass = isRunning ? 'status-running' : 'status-stopped';
+                const statusText = isRunning ? 'Running' : 'Stopped';
+                const cardClass = isRunning ? 'selected' : '';
+                
+                return `
+                    <div class="service-card ${cardClass}" id="emulator-service-${service.id}">
+                        <div class="service-name">${service.name}</div>
+                        <div class="service-description" style="margin-bottom: 10px; min-height: 60px;">${service.description}</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; font-size: 0.85em; color: #657786;">
+                            <div><strong>Port:</strong> ${service.port}</div>
+                            <div><strong>DB:</strong> ${service.database}</div>
+                        </div>
+                        <div class="service-status ${statusClass}" style="margin-bottom: 10px;">${statusText}</div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-success" style="flex: 1; padding: 8px; font-size: 0.9em;" 
+                                    onclick="emulatorStartService('${service.id}')" 
+                                    ${isRunning ? 'disabled style="opacity: 0.5;"' : ''}>
+                                Start
+                            </button>
+                            <button class="btn btn-danger" style="flex: 1; padding: 8px; font-size: 0.9em;" 
+                                    onclick="emulatorStopService('${service.id}')" 
+                                    ${!isRunning ? 'disabled style="opacity: 0.5;"' : ''}>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function emulatorStartService(serviceId) {
+            fetch('/api/services/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ service_id: serviceId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadEmulatorServices();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to start service'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to start service');
+            });
+        }
+
+        function emulatorStopService(serviceId) {
+            fetch('/api/services/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ service_id: serviceId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadEmulatorServices();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to stop service'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to stop service');
+            });
+        }
+
+        function emulatorStartAll() {
+            fetch('/api/services')
+                .then(response => response.json())
+                .then(services => {
+                    const promises = services.map(service => 
+                        fetch('/api/services/start', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ service_id: service.id })
+                        })
+                    );
+                    return Promise.all(promises);
+                })
+                .then(() => {
+                    loadEmulatorServices();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to start all services');
+                });
+        }
+
+        function emulatorStopAll() {
+            fetch('/api/services')
+                .then(response => response.json())
+                .then(services => {
+                    const promises = services.filter(s => s.status === 'running').map(service => 
+                        fetch('/api/services/stop', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ service_id: service.id })
+                        })
+                    );
+                    return Promise.all(promises);
+                })
+                .then(() => {
+                    loadEmulatorServices();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to stop all services');
+                });
+        }
+
+        function emulatorReset() {
+            fetch('/api/services/reset', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadEmulatorServices();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to reset services'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to reset services');
+            });
+        }
+
+        function updateEmulatorStatus() {
+            fetch('/api/services/status')
+                .then(response => response.json())
+                .then(status => {
+                    document.getElementById('emulator-running-count').textContent = status.running;
+                    document.getElementById('emulator-stopped-count').textContent = status.stopped;
+                })
+                .catch(error => {
+                    console.error('Error updating emulator status:', error);
+                });
+        }
+
+        // Auto-refresh emulator status every 5 seconds
+        setInterval(() => {
+            const servicesTab = document.getElementById('services-tab');
+            if (servicesTab && servicesTab.classList.contains('active')) {
+                updateEmulatorStatus();
+            }
+        }, 5000);
+
+        // Initialize
+        renderServices();
+        initTerminal();
+        loadEmulatorServices();
     </script>
-    <div class="section">
-        <h2>Curl/GraphQL Test</h2>
-        <form hx-post="/api/curl" hx-target="#curl-output" hx-swap="innerHTML">
-            <label for="url">URL:</label>
-            <input type="text" id="url" name="url" placeholder="e.g. https://api.github.com">
-            <label for="graphql">GraphQL Query (optional):</label>
-            <textarea id="graphql" name="graphql" rows="4" placeholder="{ user(login: \"octocat\") { name } }"></textarea>
-            <button type="submit">Test</button>
-        </form>
-        <div id="curl-output" class="output"></div>
-    </div>
-    <div class="section">
-        <h2>Network Info</h2>
-        <form hx-post="/api/network" hx-target="#network-output" hx-swap="innerHTML">
-            <label for="host">Host/IP:</label>
-            <input type="text" id="host" name="host" placeholder="e.g. 8.8.8.8 or google.com">
-            <button type="submit">Get Info</button>
-        </form>
-        <div id="network-output" class="output"></div>
-    </div>
 </body>
 </html>
