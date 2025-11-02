@@ -9,7 +9,13 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/pepodev/super-utils/pkg/logger"
 )
+
+func init() {
+	// Initialize test logger (no-op) for all tests
+	logger.InitTestLogger()
+}
 
 func TestHomeHandler(t *testing.T) {
 	app := fiber.New()
@@ -225,6 +231,69 @@ func TestNetworkHandler(t *testing.T) {
 
 				if !strings.Contains(bodyStr, "ips") {
 					t.Error("Expected 'ips' field in response")
+				}
+			}
+		})
+	}
+}
+
+func TestSpeedTestUploadHandler(t *testing.T) {
+	app := fiber.New(fiber.Config{
+		BodyLimit: 10 * 1024 * 1024, // 10MB limit for speed test
+	})
+	app.Post("/api/speedtest/upload", SpeedTestUploadHandler)
+
+	tests := []struct {
+		name           string
+		dataSize       int
+		expectedStatus int
+	}{
+		{
+			name:           "Upload 1KB data",
+			dataSize:       1024,
+			expectedStatus: 200,
+		},
+		{
+			name:           "Upload 5MB data",
+			dataSize:       5 * 1024 * 1024,
+			expectedStatus: 200,
+		},
+		{
+			name:           "Upload empty data",
+			dataSize:       0,
+			expectedStatus: 200,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := make([]byte, tt.dataSize)
+			req := httptest.NewRequest("POST", "/api/speedtest/upload", strings.NewReader(string(data)))
+			req.Header.Set("Content-Type", "application/octet-stream")
+
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatalf("Failed to make request: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, resp.StatusCode)
+			}
+
+			// Verify response
+			var result map[string]interface{}
+			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+				t.Fatalf("Failed to decode response: %v", err)
+			}
+
+			if result["status"] != "ok" {
+				t.Error("Expected status 'ok' in response")
+			}
+
+			if received, ok := result["received"].(float64); ok {
+				if int(received) != tt.dataSize {
+					t.Errorf("Expected received=%d, got %d", tt.dataSize, int(received))
 				}
 			}
 		})

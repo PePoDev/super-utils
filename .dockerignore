@@ -3,3 +3,4 @@ _config.yml
 helm/
 .github/
 dist/
+.vscode/

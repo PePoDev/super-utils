@@ -3,7 +3,14 @@ package services
 import (
 	"strings"
 	"testing"
+
+	"github.com/pepodev/super-utils/pkg/logger"
 )
+
+func init() {
+	// Initialize test logger (no-op) for all tests
+	logger.InitTestLogger()
+}
 
 func TestExecuteCommand(t *testing.T) {
 	tests := []struct {

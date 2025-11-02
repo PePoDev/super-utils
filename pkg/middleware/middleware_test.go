@@ -5,8 +5,14 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/pepodev/super-utils/pkg/logger"
 	"github.com/pepodev/super-utils/pkg/metrics"
 )
+
+func init() {
+	// Initialize test logger (no-op) for all tests
+	logger.InitTestLogger()
+}
 
 func TestRequestCounter(t *testing.T) {
 	app := fiber.New()

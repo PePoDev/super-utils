@@ -2,7 +2,14 @@ package services
 
 import (
 	"testing"
+
+	"github.com/pepodev/super-utils/pkg/logger"
 )
+
+func init() {
+	// Initialize test logger (no-op) for all tests
+	logger.InitTestLogger()
+}
 
 func TestGetSystemInfo(t *testing.T) {
 	info := GetSystemInfo()

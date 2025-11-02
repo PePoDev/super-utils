@@ -1,3 +1,5 @@
 # Added by goreleaser init:
 dist/
 __debug_bin*
+bin/
+coverage*

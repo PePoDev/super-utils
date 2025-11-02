@@ -999,6 +999,17 @@
             speedTestSection.id = 'speed-test-section';
             speedTestSection.innerHTML = `
                 <h3>🚀 Internet Speed Test</h3>
+                <div style="background: rgba(30, 30, 30, 0.5); padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; line-height: 1.6; border-left: 3px solid #007acc;">
+                    <strong>How it works:</strong>
+                    <ul style="margin: 8px 0 0 20px; padding: 0;">
+                        <li><strong>Download:</strong> Downloads 25MB from Cloudflare to measure your download speed</li>
+                        <li><strong>Upload:</strong> Uploads 5MB to this server to measure your upload speed</li>
+                        <li><strong>Ping:</strong> Measures average latency over 5 requests to Cloudflare</li>
+                    </ul>
+                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.8;">
+                        ℹ️ Tests run directly from your browser using external services for accurate measurements.
+                    </div>
+                </div>
                 <div class="speed-test-container">
                     <button class="speed-test-btn" onclick="runSpeedTest()" id="speed-test-btn">
                         ▶️ Run Speed Test

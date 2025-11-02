@@ -9,13 +9,21 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/pepodev/super-utils/pkg/handlers"
+	"github.com/pepodev/super-utils/pkg/logger"
 	"github.com/pepodev/super-utils/pkg/metrics"
 	"github.com/pepodev/super-utils/pkg/middleware"
 )
 
+func init() {
+	// Initialize test logger (no-op) for all tests
+	logger.InitTestLogger()
+}
+
 // setupTestApp creates a test Fiber app with all routes registered
 func setupTestApp() *fiber.App {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit: 10 * 1024 * 1024, // 10MB limit for speed test uploads
+	})
 
 	// Apply middleware
 	app.Use(middleware.RequestCounter())

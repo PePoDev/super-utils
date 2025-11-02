@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/pepodev/super-utils/pkg/logger"
+	"go.uber.org/zap"
 )
 
 // Service represents a microservice in the book shop architecture
@@ -120,12 +123,17 @@ func InitEmulator() *ServiceEmulator {
 		emulator.services[svc.ID] = &svcCopy
 	}
 
+	logger.Info("Service emulator initialized",
+		zap.Int("service_count", len(emulator.services)),
+	)
+
 	return emulator
 }
 
 // GetEmulator returns the global emulator instance
 func GetEmulator() *ServiceEmulator {
 	if emulator == nil {
+		logger.Info("Creating new service emulator instance")
 		InitEmulator()
 	}
 	return emulator
@@ -162,15 +170,29 @@ func (e *ServiceEmulator) StartService(id string) error {
 
 	svc, exists := e.services[id]
 	if !exists {
+		logger.Warn("Attempted to start non-existent service",
+			zap.String("service_id", id),
+		)
 		return fmt.Errorf("service not found: %s", id)
 	}
 
 	if svc.Status == "running" {
+		logger.Warn("Attempted to start already running service",
+			zap.String("service_id", id),
+			zap.String("service_name", svc.Name),
+		)
 		return fmt.Errorf("service is already running: %s", id)
 	}
 
 	svc.Status = "running"
 	svc.StartedAt = time.Now()
+
+	logger.Info("Service started",
+		zap.String("service_id", id),
+		zap.String("service_name", svc.Name),
+		zap.Int("port", svc.Port),
+	)
+
 	return nil
 }
 
@@ -181,15 +203,28 @@ func (e *ServiceEmulator) StopService(id string) error {
 
 	svc, exists := e.services[id]
 	if !exists {
+		logger.Warn("Attempted to stop non-existent service",
+			zap.String("service_id", id),
+		)
 		return fmt.Errorf("service not found: %s", id)
 	}
 
 	if svc.Status == "stopped" {
+		logger.Warn("Attempted to stop already stopped service",
+			zap.String("service_id", id),
+			zap.String("service_name", svc.Name),
+		)
 		return fmt.Errorf("service is already stopped: %s", id)
 	}
 
 	svc.Status = "stopped"
 	svc.StartedAt = time.Time{}
+
+	logger.Info("Service stopped",
+		zap.String("service_id", id),
+		zap.String("service_name", svc.Name),
+	)
+
 	return nil
 }
 
@@ -198,10 +233,21 @@ func (e *ServiceEmulator) ResetAllServices() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	logger.Info("Resetting all services")
+
+	stoppedCount := 0
 	for _, svc := range e.services {
-		svc.Status = "stopped"
-		svc.StartedAt = time.Time{}
+		if svc.Status == "running" {
+			svc.Status = "stopped"
+			svc.StartedAt = time.Time{}
+			stoppedCount++
+		}
 	}
+
+	logger.Info("All services reset",
+		zap.Int("services_stopped", stoppedCount),
+		zap.Int("total_services", len(e.services)),
+	)
 }
 
 // GetServiceStatus returns a summary of service statuses
